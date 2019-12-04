@@ -1,0 +1,1348 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Greenplum 使用笔记 | 添雨</title>
+<meta name="description" content="记录生活、记录历史" />
+<link rel="shortcut icon" href="https://taliove.github.io/favicon.ico?v=1575429595601">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://taliove.github.io/styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://taliove.github.io">
+  <img class="avatar" src="https://taliove.github.io/images/avatar.png?v=1575429595601" alt="">
+  </a>
+  <h1 class="site-title">
+    添雨
+  </h1>
+  <p class="site-description">
+    记录生活、记录历史
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              Greenplum 使用笔记
+            </h2>
+            <div class="post-info">
+              <span>
+                2019-12-04
+              </span>
+              <span>
+                32 min read
+              </span>
+              
+                <a href="https://taliove.github.io/tag/OS0ixoDOc" class="post-tag">
+                  # 大数据
+                </a>
+              
+                <a href="https://taliove.github.io/tag/2Zc3EDyQ6u" class="post-tag">
+                  # Greenplum
+                </a>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h1 id="greenplum">Greenplum</h1>
+<blockquote>
+<p>链接：<br>
+[<a href="https://gpdb.docs.pivotal.io/6-1/main/index.html">Pivotal Greenplum® 6.1 Documentation</a> · <a href="https://network.pivotal.io/products/pivotal-gpdb#/releases/338232">Pivotal Greenplum Download</a>]</p>
+</blockquote>
+<p>Pivotal Greenplum数据库是一个大规模并行处理（MPP）数据库服务器，它支持下一代数据仓库和大规模分析处理。 通过自动分区数据并运行并行查询，它使服务器集群可以作为单个数据库超级计算机运行，其运行速度比传统数据库快数十倍或数百倍。 它支持SQL，MapReduce并行处理以及数据量，范围从数百GB到数百TB。</p>
+<!-- more -->
+<h2 id="常用命令">常用命令</h2>
+<h3 id="重启gp">重启GP</h3>
+<p>关机完成后重新启动。</p>
+<pre><code class="language-bash">gpstop -r
+</code></pre>
+<h3 id="使配置生效">使配置生效</h3>
+<p>重新加载master和segment的pg_hba.conf文件以及postgresql.conf文件的运行时参数，但不会关闭Greenplum数据库阵列。 编辑postgresql.conf或pg_hba.conf后，使用此选项可以激活新的配置设置。 请注意，这仅适用于指定为运行时参数的配置参数。</p>
+<pre><code class="language-bash">gpstop -u
+</code></pre>
+<h3 id="快速关闭">快速关闭</h3>
+<p>快速关机。 任何正在进行的事务都会中断并回滚。</p>
+<pre><code class="language-bash">gpstop -M fast
+</code></pre>
+<blockquote>
+<p>文档：<br>
+<a href="https://gpdb.docs.pivotal.io/6-1/utility_guide/ref/gpstop.html">gpstop 命令参考</a></p>
+</blockquote>
+<h2 id="部署">部署</h2>
+<h3 id="系统准备">系统准备</h3>
+<blockquote>
+<p>文档：<br>
+<a href="https://gpdb.docs.pivotal.io/6-1/install_guide/prep_os.html#topic3__system_memory">系统准备</a></p>
+</blockquote>
+<h5 id="修改-hosts">修改 hosts</h5>
+<pre><code class="language-bash">vim /etc/hosts
+
+# 粘贴以下内容到末尾并 :wq 保存
+192.168.218.87 master
+192.168.218.88 data1
+192.168.218.89 data2
+192.168.218.90 data3
+</code></pre>
+<h5 id="修改etcsysctlconf">修改<code>/etc/sysctl.conf</code></h5>
+<p>根据实际情况，修改以下值，并使用<code>sysctl -p</code>进行重新加载</p>
+<p>以下配置是以8GB内存为例：</p>
+<pre><code class="language-conf"># kernel.shmall = _PHYS_PAGES / 2 # See Shared Memory Pages
+kernel.shmall = 1001280
+# kernel.shmmax = kernel.shmall * PAGE_SIZE 
+kernel.shmmax = 4101242880
+kernel.shmmni = 4096
+vm.overcommit_memory = 2 # See Segment Host Memory
+vm.overcommit_ratio = 95 # See Segment Host Memory
+
+net.ipv4.ip_local_port_range = 10000 65535 # See Port Settings
+kernel.sem = 500 2048000 200 40960
+kernel.sysrq = 1
+kernel.core_uses_pid = 1
+kernel.msgmnb = 65536
+kernel.msgmax = 65536
+kernel.msgmni = 2048
+net.ipv4.tcp_syncookies = 1
+net.ipv4.conf.default.accept_source_route = 0
+net.ipv4.tcp_max_syn_backlog = 4096
+net.ipv4.conf.all.arp_filter = 1
+net.core.netdev_max_backlog = 10000
+net.core.rmem_max = 2097152
+net.core.wmem_max = 2097152
+vm.swappiness = 10
+vm.zone_reclaim_mode = 0
+vm.dirty_expire_centisecs = 500
+vm.dirty_writeback_centisecs = 100
+vm.dirty_background_ratio = 3 # See System Memory
+vm.dirty_ratio = 10
+#对于内存低于64GB，注释以下两行
+#vm.dirty_background_bytes = 1610612736
+#vm.dirty_bytes = 4294967296
+vm.min_free_kbytes = 240307
+</code></pre>
+<h6 id="shared-memory-pages">Shared Memory Pages</h6>
+<p>要计算<code>_PHYS_PAGES</code>可使用以下命令：</p>
+<pre><code class="language-bash">$ echo $(expr $(getconf _PHYS_PAGES) / 2) 
+$ echo $(expr $(getconf _PHYS_PAGES) / 2 \* $(getconf PAGE_SIZE))
+</code></pre>
+<h6 id="system-memory">System Memory</h6>
+<p>对于具有64GB以上内存的主机系统，建议以下设置：</p>
+<pre><code class="language-ini">vm.dirty_background_ratio = 0
+vm.dirty_ratio = 0
+vm.dirty_background_bytes = 1610612736 # 1.5GB
+vm.dirty_bytes = 4294967296 # 4GB
+</code></pre>
+<p>对于具有64GB或更少内存的主机系统，请删除vm.dirty_background_bytes和vm.dirty_bytes并将两个比率参数设置为以下值：</p>
+<pre><code class="language-ini">vm.dirty_background_ratio = 3
+vm.dirty_ratio = 10
+</code></pre>
+<p>增加vm.min_free_kbytes以确保轻松满足来自网络和存储驱动程序的PF_MEMALLOC请求。 这对于具有大量系统内存的系统尤其重要。 在这些系统上，默认值通常太低。 使用以下awk命令将vm.min_free_kbytes设置为建议的系统物理内存的3％：</p>
+<pre><code class="language-bash">awk 'BEGIN {OFMT = &quot;%.0f&quot;;} /MemTotal/ {print &quot;vm.min_free_kbytes =&quot;, $2 * .03;}' /proc/meminfo &gt;&gt; /etc/sysctl.conf 
+</code></pre>
+<h5 id="修改系统资源限制">修改系统资源限制</h5>
+<p><code>vim /etc/security/limits.conf</code>：</p>
+<pre><code class="language-text">* soft nofile 524288
+* hard nofile 524288
+* soft nproc 131072
+* hard nproc 131072
+</code></pre>
+<p>在每个段主机上执行<code>ulimit-u</code>命令，以显示每个用户可用的最大进程数。验证返回值是否为131072。</p>
+<h5 id="磁盘io优化">磁盘IO优化</h5>
+<h6 id="预读值">预读值</h6>
+<p>每个磁盘设备文件的预读（blockdev）值应为<code>16384</code>。要验证磁盘设备的预读值，请执行以下操作：</p>
+<pre><code class="language-bash">/sbin/blockdev --getra devname
+</code></pre>
+<p>举例：</p>
+<pre><code class="language-bash">/sbin/blockdev --getra /dev/vdb
+</code></pre>
+<p>可以使用命令<code>df -h</code>查看所有的挂载设备。</p>
+<h6 id="设置blockdev预读">设置blockdev（预读）</h6>
+<p>使用以下命令设置预读值：</p>
+<pre><code class="language-bash">/sbin/blockdev --setra bytes devname
+</code></pre>
+<p>举例：</p>
+<pre><code class="language-bash">/sbin/blockdev --setra 16384 /dev/vdb
+</code></pre>
+<blockquote>
+<p>注意：blockdev --setra命令不是永久性的，它需要在每次系统重新引导时运行。 该命令的运行方式因系统而异，但是必须确保每次系统重新引导时都设置了预读设置。</p>
+</blockquote>
+<h3 id="安装">安装</h3>
+<p>在每台机器上分别使用用户gpadmin进行安装：</p>
+<pre><code class="language-bash">sudo yun install ./gp....rpm
+</code></pre>
+<p>然后使用以下命令将<code>/usr/local/gp**</code>目录修改所有者：</p>
+<pre><code class="language-bash">sudo chown -R gpadmin:gpadmin /usr/local/greenplum*
+</code></pre>
+<h3 id="配置ssh免密登录">配置SSH免密登录</h3>
+<ol>
+<li>使用<code>gpadmin</code>身份登录服务器</li>
+<li>执行gp运行环境初始化</li>
+</ol>
+<pre><code class="language-bash"> source /usr/local/greenplum-db-&lt;version&gt;/greenplum_path.sh
+</code></pre>
+<blockquote>
+<p>注意：将上述源代码命令添加到gpadmin用户的.bashrc或其他Shell启动文件中，以便每当您以gpadmin登录时，都会设置Greenplum数据库的路径和环境变量。</p>
+</blockquote>
+<ol start="3">
+<li>使用<code>ssh-copy-id</code>命令将gpadmin的公钥添加到集群所有机器中。</li>
+</ol>
+<pre><code class="language-text">$ ssh-copy-id master
+$ ssh-copy-id data1
+$ ssh-copy-id data2
+$ ssh-copy-id data3
+</code></pre>
+<ol start="4">
+<li>在gpadmin主目录中，创建一个名为<code>hostfile_exkeys</code>的文件，该文件为计算机配置了Greenplum系统中每个主机（主机，备用主机和段主机）的主机名和主机地址（接口名称）。 确保没有空白行或多余的空格。</li>
+</ol>
+<pre><code class="language-bash">master
+data1
+data2
+data3
+</code></pre>
+<ol start="5">
+<li>使用以下命令以启动免密登录</li>
+</ol>
+<pre><code class="language-bash">gpssh-exkeys -f hostfile_exkeys
+</code></pre>
+<h3 id="创建主机与备机上创建存储区">创建主机与备机上创建存储区</h3>
+<h4 id="在主机上创建数据目录位置">在主机上创建数据目录位置</h4>
+<p>主目录上的数据目录位置与段上的数据目录位置不同。 主服务器不存储任何用户数据，只有系统目录表和系统元数据存储在主服务器实例上，因此您无需指定与段上一样多的存储空间。</p>
+<ul>
+<li>创建或选择一个目录作为您的主数据存储区域。 该目录应具有足够的磁盘空间来存储您的数据，并由gpadmin用户和组拥有。 例如，以root用户身份运行以下命令：</li>
+</ul>
+<pre><code class="language-bash">mkdir /opt/data/gp-master
+</code></pre>
+<ul>
+<li>将此目录所有权更改为<code>gpadmin</code>用户：</li>
+</ul>
+<pre><code class="language-bash">sudo chown gpadmin:gpadmin /opt/data/gp-master
+</code></pre>
+<ul>
+<li>使用gpssh，也在备用主数据库上创建主数据目录位置。 例如</li>
+</ul>
+<pre><code class="language-bash">source /usr/local/greenplum-db/greenplum_path.sh 
+gpssh -h data1 -e 'sudo mkdir -p /opt/data/gp-master'
+gpssh -h data1 -e 'sudo chown gpadmin:gpadmin /opt/data/gp-master'
+
+gpssh -h data2 -e 'sudo mkdir -p /opt/data/gp-master'
+gpssh -h data2 -e 'sudo chown gpadmin:gpadmin /opt/data/gp-master'
+
+gpssh -h data3 -e 'sudo mkdir -p /opt/data/gp-master'
+gpssh -h data3 -e 'sudo chown gpadmin:gpadmin /opt/data/gp-master'
+</code></pre>
+<h4 id="在主机上创建数据存储区">在主机上创建数据存储区</h4>
+<h5 id="在所有主机上创建数据目录位置">在所有主机上创建数据目录位置</h5>
+<ol>
+<li>在<code>master</code>主机上，使用<code>root</code>用户：</li>
+</ol>
+<pre><code class="language-bash">su
+</code></pre>
+<ol start="2">
+<li>创建一个名为<code>hostfile_gpssh_segonly</code>的文件。 对于每个段主机，此文件应只有一台机器配置的主机名。 例如，如果您有三个段主机：</li>
+</ol>
+<pre><code class="language-text">data1
+data2
+data3
+</code></pre>
+<ol start="3">
+<li>使用gpssh，使用刚刚创建的<code>hostfile_gpssh_segonly</code>文件一次性在所有段主机上创建主和镜像数据目录位置。例如：</li>
+</ol>
+<pre><code class="language-bash">source /usr/local/greenplum-db/greenplum_path.sh 
+gpssh -f hostfile_gpssh_segonly -e 'sudo mkdir -p /opt/data/gp-data/primary'
+gpssh -f hostfile_gpssh_segonly -e 'sudo mkdir -p /opt/data/gp-data/mirror'
+gpssh -f hostfile_gpssh_segonly -e 'sudo chown -R gpadmin:gpadmin /opt/data/gp-data/*'
+</code></pre>
+<h3 id="验证硬件和网络性能">验证硬件和网络性能</h3>
+<p>Greenplum提供了一个名为gpcheckperf的管理应用工具，可用于识别Greenplum Database阵列中计算机上的硬件和系统级问题。gpcheckperf在指定的主机上启动会话并运行以下性能测试：</p>
+<ul>
+<li>Network Performance (gpnetbench*)</li>
+<li>Disk I/O Performance (dd test)</li>
+<li>Memory Bandwidth (stream test)</li>
+</ul>
+<h4 id="验证网络性能">验证网络性能</h4>
+<p>要测试网络性能，请使用以下网络测试运行选项之一运行gpcheckperf：并行对测试（-r N），串行对测试（-r n）或全矩阵测试（-r M）。</p>
+<p>该实用程序运行网络基准测试程序，该程序将5秒钟的数据流从当前主机传输到测试中包括的每个远程主机。 默认情况下，数据以并行方式传输到每个远程主机，最小，最大，平均和中值网络传输速率以每秒兆字节（MB）报告。 如果摘要传输速率比预期的慢（小于100 MB / s），则可以使用<code>-r n</code>选项连续运行网络测试以获得每台主机的结果。</p>
+<p>要运行全矩阵带宽测试，可以指定-r M，这将导致每个主机从指定的每个其他主机发送和接收数据。 此测试最适合用来验证交换结构是否可以承受全矩阵工作负载。</p>
+<p>Greenplum数据库阵列中的大多数系统都配置有多个网络接口卡（NIC），每个NIC都位于其自己的子网中。 测试网络性能时，单独测试每个子网很重要。</p>
+<p>创建文件<code>hostfile_gpchecknet_ic1</code>：</p>
+<pre><code class="language-text">master
+data1
+data2
+data3
+</code></pre>
+<p>然后，您将每个子网运行一次gpcheckperf。 例如（如果要测试偶数个主机，请以并行对测试模式运行）：</p>
+<pre><code class="language-bash">$ gpcheckperf -f hostfile_gpchecknet_ic1 -r N -d /tmp &gt; subnet1.out
+</code></pre>
+<p>网络测试结果：</p>
+<pre><code class="language-text">-------------------
+--  NETPERF TEST
+-------------------
+
+====================
+==  RESULT 2019-12-03T14:40:30.737284
+====================
+Netperf bisection bandwidth test
+data1 -&gt; data2 = 11.100000
+data3 -&gt; data1 = 10.170000
+data2 -&gt; data1 = 10.870000
+data1 -&gt; data3 = 11.080000
+
+Summary:
+sum = 43.22 MB/sec
+min = 10.17 MB/sec
+max = 11.10 MB/sec
+avg = 10.80 MB/sec
+median = 11.08 MB/sec
+</code></pre>
+<h4 id="验证磁盘i-o和内存带宽">验证磁盘I / O和内存带宽</h4>
+<ol>
+<li>使用gpadmin用户登录master</li>
+<li>从Greenplum安装中获取greenplum_path.sh路径文件，例：</li>
+</ol>
+<pre><code class="language-bash">source /usr/local/greenplum-db/greenplum_path.sh
+</code></pre>
+<ol start="3">
+<li>创建名为hostfile_gpcheckperf的主机文件，其中每个段host都有一个主机名。不包括主主机。例如：</li>
+</ol>
+<pre><code class="language-text">data1
+data2
+data3
+</code></pre>
+<ol start="4">
+<li>使用您刚创建的hostfile_gpcheckperf文件运行gpcheckperf实用程序。 使用-d选项指定要在每个主机上测试的文件系统（您必须具有对这些目录的写访问权）。 您将要测试所有主要和镜像段数据目录位置。 例如：</li>
+</ol>
+<pre><code class="language-bash">gpcheckperf -f hostfile_gpcheckperf -r ds -D -d /opt/data/gp-data/primary -d /opt/data/gp-data/mirror
+</code></pre>
+<ol start="5">
+<li>该实用程序可能需要一段时间才能执行测试，因为它在主机之间复制了非常大的文件。 完成后，您将看到“磁盘写入”，“磁盘读取”和“流”测试的摘要结果。</li>
+</ol>
+<p>该测试将在备库中写入16GB左右大小的数据。写完后，再进行读的测试。</p>
+<p>测试结果：</p>
+<pre><code class="language-text">====================
+==  RESULT 2019-12-03T14:57:38.863950
+====================
+
+ disk write avg time (sec): 307.24
+ disk write tot bytes: 98429829120
+ disk write tot bandwidth (MB/s): 309.69
+ disk write min bandwidth (MB/s): 86.99 [data1]
+ disk write max bandwidth (MB/s): 111.90 [data3]
+ -- per host bandwidth --
+    disk write bandwidth (MB/s): 86.99 [data1]
+    disk write bandwidth (MB/s): 111.90 [data3]
+    disk write bandwidth (MB/s): 110.79 [data2]
+
+
+ disk read avg time (sec): 291.00
+ disk read tot bytes: 98429829120
+ disk read tot bandwidth (MB/s): 336.51
+ disk read min bandwidth (MB/s): 82.13 [data1]
+ disk read max bandwidth (MB/s): 127.54 [data3]
+ -- per host bandwidth --
+    disk read bandwidth (MB/s): 82.13 [data1]
+    disk read bandwidth (MB/s): 127.54 [data3]
+    disk read bandwidth (MB/s): 126.84 [data2]
+
+
+ stream tot bandwidth (MB/s): 63295.60
+ stream min bandwidth (MB/s): 21008.30 [data2]
+ stream max bandwidth (MB/s): 21231.60 [data1]
+ -- per host bandwidth --
+    stream bandwidth (MB/s): 21231.60 [data1]
+    stream bandwidth (MB/s): 21055.70 [data3]
+    stream bandwidth (MB/s): 21008.30 [data2]
+</code></pre>
+<h3 id="初始化greenplum数据库系统">初始化Greenplum数据库系统</h3>
+<blockquote>
+<p><a href="https://gpdb.docs.pivotal.io/6-1/install_guide/init_gpdb.html#topic5">init_gpdb</a></p>
+</blockquote>
+<h4 id="创建初始化服务器文件">创建初始化服务器文件</h4>
+<ol>
+<li>使用 gpadmin 账号登录</li>
+<li>创建文件名为：<code>hostfile_gpinitsystem</code>：</li>
+</ol>
+<pre><code class="language-text">data1
+data2
+data3
+</code></pre>
+<ol start="3">
+<li>保存并关闭文件</li>
+</ol>
+<h4 id="配置gp数据库">配置GP数据库</h4>
+<ol>
+<li>使用 gpadmin 登录</li>
+<li>拷贝gpinitsystem_config文件的副本。 例如：</li>
+</ol>
+<pre><code class="language-bash">cp $GPHOME/docs/cli_help/gpconfigs/gpinitsystem_config /home/gpadmin/gpconfigs/gpinitsystem_config
+</code></pre>
+<ol start="3">
+<li>在文本编辑器中打开您刚刚复制的文件。根据您的环境设置所有必需的参数。<br>
+有关更多信息，请参见<a href="https://gpdb.docs.pivotal.io/6-1/utility_guide/ref/gpinitsystem.html">gpinitsystem</a>。<br>
+Greenplum数据库系统必须包含一个主实例和至少两个段实例（即使设置一个单节点系统）。DATA_DIRECTORY参数确定每个主机将创建多少个段。<br>
+如果段主机具有多个网络接口，并且在主机文件中使用了它们的接口地址名称，则段数将平均分配到可用接口数上。<br>
+要指定PORT_BASE，请查看<code>/etc/sysctl.conf</code>文件中<code>net.ipv4.ip_local_port_range</code>参数中指定的端口范围。这是gpinitsystem_config文件中必需参数的示例：</li>
+</ol>
+<pre><code class="language-text">ARRAY_NAME=&quot;Greenplum Data Platform&quot;
+SEG_PREFIX=gpseg
+PORT_BASE=6000 
+declare -a DATA_DIRECTORY=(/data1/primary /data1/primary /data1/primary /data2/primary /data2/primary /data2/primary)
+MASTER_HOSTNAME=mdw 
+MASTER_DIRECTORY=/data/master 
+MASTER_PORT=5432 
+TRUSTED SHELL=ssh
+CHECK_POINT_SEGMENTS=8
+ENCODING=UNICODE
+</code></pre>
+<ol start="4">
+<li>保存并关闭文件</li>
+</ol>
+<h4 id="运行初始化程序">运行初始化程序</h4>
+<p><a href="https://gpdb.docs.pivotal.io/6-1/utility_guide/ref/gpinitsystem.html">gpinitsystem</a>应用工具将使用配置文件中定义的值创建Greenplum Database系统。</p>
+<h5 id="运行初始化程序-2">运行初始化程序</h5>
+<ol>
+<li>运行以下命令，引用初始化配置文件(Gpinitsystem_Config)和主机文件(Hostfile_Gpinitsystem)的路径和文件名。例如：</li>
+</ol>
+<pre><code class="language-text">$ cd ~
+$ gpinitsystem -c gpconfigs/gpinitsystem_config -h gpconfigs/hostfile_gpinitsystem
+</code></pre>
+<p>对于完全冗余的系统（具有备用主服务器和扩展镜像配置），请包括-s和-S选项。 例如：</p>
+<pre><code class="language-text">gpinitsystem -c gpconfigs/gpinitsystem_config -h gpconfigs/hostfile_gpinitsystem -s standby_master_hostname -S
+</code></pre>
+<ol start="2">
+<li>该实用程序将验证您的设置信息，并确保它可以连接到每个主机并访问配置中指定的数据目录。 如果所有预检查均成功，该实用程序将提示您确认配置。 例如：</li>
+</ol>
+<pre><code class="language-text">=&gt; Continue with Greenplum creation? Yy/Nn
+</code></pre>
+<ol start="3">
+<li>按<code>y</code>进行初始化。这个过程需要一些时间。</li>
+<li>成功时出现提示：</li>
+</ol>
+<pre><code class="language-text">=&gt; Greenplum Database instance successfully created.
+</code></pre>
+<h4 id="配置环境变量">配置环境变量</h4>
+<ol>
+<li>使用 gpadmin 登录 master 主机</li>
+</ol>
+<pre><code class="language-bash">vim ~/.bashrc
+</code></pre>
+<ol start="2">
+<li>在其后添加：</li>
+</ol>
+<pre><code class="language-text">export MASTER_DATA_DIRECTORY=/opt/data/gp-master/gpseg-1/
+</code></pre>
+<ol start="3">
+<li>生效</li>
+</ol>
+<pre><code class="language-bash">source ~/.bashrc
+</code></pre>
+<h4 id="设置时区">设置时区</h4>
+<pre><code class="language-text"># gpconfig -s TimeZone
+# gpconfig -c TimeZone -v 'US/Pacific'
+</code></pre>
+<p>更改时区后，您必须重新启动Greenplum数据库。 命令<code>gpstop -ra</code>重新启动Greenplum数据库。 目录视图<code>pg_timezone_names</code>提供了<code>Greenplum</code>数据库时区信息</p>
+<h3 id="配置客户端访问">配置客户端访问</h3>
+<ol>
+<li>打开文件<code>$MASTER_DATA_DIRECTORY/pg_hba.conf</code></li>
+<li>为您要允许的每种连接类型在文件中添加一行。 记录是顺序读取的，因此记录的顺序很重要。 通常，较早的记录将具有紧密的连接匹配参数和较弱的身份验证方法，而较新的记录将具有较宽松的匹配参数和较强的身份验证方法。 例如：</li>
+</ol>
+<pre><code class="language-bash"># allow the gpadmin user local access to all databases
+# using ident authentication
+local   all   gpadmin   ident         sameuser
+host    all   gpadmin   127.0.0.1/32  ident
+host    all   gpadmin   ::1/128       ident
+# allow the 'dba' role access to any database from any
+# host with IP address 192.168.x.x and use md5 encrypted
+# passwords to authenticate the user
+# Note that to use SHA-256 encryption, replace md5 with
+# password in the line below
+host    all   dba   192.168.0.0/32  md5
+# allow all roles access to any database from any
+# host and use ldap to authenticate the user. Greenplum role
+# names must match the LDAP common name.
+host    all   all   192.168.0.0/32  ldap ldapserver=usldap1 ldapport=1389 ldapprefix=&quot;cn=&quot; ldapsuffix=&quot;,ou=People,dc=company,dc=com&quot;
+</code></pre>
+<ol start="3">
+<li>保存并退出文件</li>
+<li>使用命令<code>gpstop -u</code>使配置生效。</li>
+</ol>
+<blockquote>
+<p>保护并限制对gpadmin系统用户的访问。Greenplum需要UNIX用户ID才能安装和初始化Greenplum数据库系统。 该系统用户在Greenplum文档中称为gpadmin。<br>
+gpadmin用户是Greenplum数据库中的默认数据库超级用户，也是Greenplum安装及其基础数据文件的文件系统所有者。<br>
+默认的管理员帐户是Greenplum数据库设计的基础。 没有它，系统将无法运行，并且无法限制gpadmin用户ID的访问。<br>
+gpadmin用户可以绕过Greenplum数据库的所有安全功能。<br>
+使用此用户ID登录到Greenplum主机的任何人都可以读取，更改或删除任何数据，包括系统目录数据和数据库访问权限。<br>
+因此，保护<strong>gpadmin</strong>用户ID并仅允许基本系统管理员对其进行访问非常重要。管理员仅应在执行某些系统维护任务（例如升级或扩展）时以gpadmin身份登录Greenplum。<br>
+数据库用户永远不要以gpadmin身份登录，而ETL或生产工作负载绝对不应以gpadmin身份运行。</p>
+</blockquote>
+<h2 id="使用">使用</h2>
+<h3 id="用户操作">用户操作</h3>
+<p>以下操作均在<code>psql</code>中使用。使用gpadmin账号登录主机后：</p>
+<pre><code class="language-bash">psql postgres
+</code></pre>
+<h4 id="查看所有用户">查看所有用户</h4>
+<p>使用命令<code>\du</code>，列举所有用户。</p>
+<h4 id="创建用户">创建用户</h4>
+<pre><code class="language-sql">create user warehouse with password 'warehouse'
+</code></pre>
+<h4 id="删除用户">删除用户</h4>
+<pre><code class="language-sql">DROP USER user1;
+</code></pre>
+<h4 id="修改用户密码">修改用户密码</h4>
+<pre><code class="language-sql">ALTER USER user_name WITH PASSWORD 'new_password';
+</code></pre>
+<h3 id="创建数据库">创建数据库</h3>
+<h4 id="创建数据库并指向用户">创建数据库并指向用户</h4>
+<pre><code class="language-sql">create database warehouse owner warehouse;
+</code></pre>
+<p>将数据库的所有权限都赋予给用户：</p>
+<pre><code class="language-sql">GRANT ALL PRIVILEGES ON DATABASE warehouse TO warehouse;
+</code></pre>
+<p>配置用户访问权限：</p>
+<pre><code class="language-bash">vim /opt/data/gp-master/gpseg-1/pg_hba.conf
+或者
+sudo vim $MASTER_DATA_DIRECTORY/pg_hba.conf
+#在最后一行新增：
+
+host     all         warehouse       0.0.0.0/0 md5
+</code></pre>
+<p>使用命令<code>gpstop -u</code>使之生效。</p>
+<h3 id="连接">连接</h3>
+<p>去<a href="https://network.pivotal.io/products/pivotal-gpdb#/releases/338232">下载</a>处下载 Windows 客户端并安装。<br>
+然后使用如下命令即可连接：</p>
+<pre><code class="language-bash">psql -h 192.168.218.250 -p 2345 -U gpadmin -d beacon
+</code></pre>
+<blockquote>
+<p>如果提示 psql: FATAL:  no pg_hba.conf entry for host &quot;192.168.218.105&quot;, user &quot;pgadmin&quot;, database &quot;beacon&quot;，则表示需要修改pg_hba.conf。在配置文件一般存在于<strong>master</strong>节点。<br>
+<code>vim /data/greenplum-db/gpdata/gpmaster/gpseg-1/pg_hba.conf</code><br>
+添加如下信息<br>
+<code>host all gpadmin 0.0.0.0/0 md5</code><br>
+接着使用<code>gpstop -u</code>重载配置即可<br>
+注意：如果gpstop命令未找到，则需要使用<code>source /opt/greenplum-db/greenplum_path.sh</code>进行环境变量的写入</p>
+</blockquote>
+<h3 id="表">表</h3>
+<h4 id="创建表">创建表</h4>
+<h5 id="基于json格式创建表">基于JSON格式创建表</h5>
+<pre><code class="language-sql">create or replace function create_table_from_json(json text, tablename text)
+returns void language plpgsql
+as $$begin
+  execute
+    replace(
+      replace(
+        regexp_replace(
+          json,
+          '(&quot;[^&quot;]*&quot;):(&quot;[^&quot;]*&quot;)',
+          '    \1 text', 'g'),
+        '{', 
+        format('create table %s (', tablename)),
+      '}',
+      ');');end 
+$$;
+
+create or replace function insert_from_json(json text, tablename text)
+returns void language plpgsql
+as $$begin
+  execute
+    replace(
+      replace(
+        regexp_replace(
+          json,
+          '(&quot;[^&quot;]*&quot;):&quot;([^&quot;]*)&quot;',
+          '''\2''', 'g'),
+        '{', 
+        format('insert into %s values (', tablename)),
+      '}',
+      ');');end 
+$$;
+</code></pre>
+<p>调用：</p>
+<pre><code class="language-sql">create_table_from_json('jsonString', 'tableName')
+</code></pre>
+<p>一定要注意参数必须用单引号<code>'</code>包含。且所有字段值必须使用双引号包含。该创建方法只适合创建全字符串类型字段的表。</p>
+<blockquote>
+<p><a href="https://stackoverflow.com/questions/23609449/create-table-based-on-json-file-in-postgresql">参考</a></p>
+</blockquote>
+<h5 id="创建id自增表">创建ID自增表</h5>
+<blockquote>
+<p>参考文档：<br>
+<a href="https://gpdb.docs.pivotal.io/43200/admin_guide/ddl/ddl-sequence.html">序列参考 ddl sequence</a></p>
+</blockquote>
+<h6 id="创建和使用序列">创建和使用序列</h6>
+<p>创建一个名为<code>myserial</code>的序列，并且以<code>101</code>开始：</p>
+<pre><code class="language-sql">CREATE SEQUENCE myserial START 101;
+</code></pre>
+<h6 id="检查序列">检查序列</h6>
+<p>检查名为<code>myserial</code>的序列：</p>
+<pre><code class="language-sql">select * from myserial;
+</code></pre>
+<h6 id="返回下一个序列计数">返回下一个序列计数</h6>
+<p>调用<code>nextval()</code>内置函数以返回并使用序列中的下一个值。</p>
+<p>以下命令将名为myserial的序列的下一个值插入名为vendor的表的第一列：</p>
+<pre><code class="language-sql">INSERT INTO vendors VALUES (nextval('myserial'), 'acme');
+</code></pre>
+<h6 id="设置计数器序列">设置计数器序列</h6>
+<p>调用<code>setval()</code>内置函数以设置<code>myserial</code>的序列值：</p>
+<pre><code class="language-sql">SELECT setval('myserial', 201);
+</code></pre>
+<h6 id="修改序列属性">修改序列属性</h6>
+<p>调用以下命令，使序列以105重新开始：</p>
+<pre><code class="language-sql">ALTER SEQUENCE myserial RESTART WITH 105;
+</code></pre>
+<h6 id="删除序列">删除序列</h6>
+<pre><code class="language-sql">DROP SEQUENCE myserial;
+</code></pre>
+<h6 id="将序列指定为一个列的默认值">将序列指定为一个列的默认值</h6>
+<p>创建表时指定：</p>
+<pre><code class="language-sql">CREATE TABLE tablename ( id INT4 DEFAULT nextval('myserial'), name text );
+</code></pre>
+<p>或者修改表的属性：</p>
+<pre><code class="language-sql">ALTER TABLE tablename ALTER COLUMN id SET DEFAULT nextval('myserial');
+</code></pre>
+<h5 id="分布键">分布键</h5>
+<p>由于Greenplum是一个分布式的数据库，数据是分散存储在各个数据节点的，所以需要告诉Greenplum数据应该如何分布。默认情况下，Greenplum将使用第一个字段作为分布键。</p>
+<p>用户可以指定 分布列(允许指定多个列) ，或者使用<strong>随机分布</strong>算法。</p>
+<p>分布键的设置原则：</p>
+<ul>
+<li>分布列尽量选择需要经常JOIN的列，这类查询的并发越高，越应该考虑。</li>
+<li>尽量选择分布均匀的列，或者多列</li>
+<li>尽量选择高并发查询的条件列（指该查询条件产生的中间结果集小的，如果中间结果集很大，那就让所有节点都来参与运算更好，因此不选），如果有多个条件，请先权衡前面的法则</li>
+<li>不要轻易使用随机分布</li>
+</ul>
+<h6 id="查看分布键">查看分布键</h6>
+<p>命令查看：</p>
+<pre><code class="language-psql">\d tablename
+</code></pre>
+<p>sql 查看表<code>st_user_action</code>的分布键：</p>
+<pre><code class="language-sql">select attname from pg_attribute where attrelid='st_user_action'::regclass and attnum in (SELECT unnest(distkey) FROM pg_catalog.gp_distribution_policy t where localoid='st_user_action'::regclass);
+
+# result
+#attname
+#------
+# amount
+</code></pre>
+<h6 id="创建表时指定分布键">创建表时指定分布键</h6>
+<pre><code class="language-sql">CREATE TABLE &quot;public&quot;.&quot;test&quot; (
+  &quot;amount&quot; int8,
+	&quot;id&quot; int8,
+  &quot;business_cate&quot; varchar(100) COLLATE &quot;pg_catalog&quot;.&quot;default&quot;
+) DISTRIBUTED BY (id);
+</code></pre>
+<h6 id="修改分布键">修改分布键</h6>
+<p>修改表<code>st_user_action</code>的分布键：</p>
+<pre><code class="language-sql">ALTER TABLE st_user_action SET DISTRIBUTED BY (id)
+</code></pre>
+<h5 id="表分区">表分区</h5>
+<p>分区的目的是尽可能的缩小QUERY需要扫描的数据量，因此必须和查询条件相关联。</p>
+<p>分区法则：</p>
+<ul>
+<li>尽量选择和查询条件相关的字段，缩小QUERY需要扫描的数据</li>
+<li>当有多个查询条件时，可以使用子分区，进一步缩小需要扫描的数据</li>
+</ul>
+<h4 id="数据倾斜">数据倾斜</h4>
+<p>监控数据倾斜脚本：</p>
+<pre><code class="language-sql">select gp_execution_dbid(), datname, pg_size_pretty(pg_database_size(datname)) from gp_dist_random('pg_database') order by 2,1,pg_database_size(datname) desc;
+</code></pre>
+<p>监控表级倾斜：</p>
+<pre><code class="language-sql">select gp_execution_dbid(), pg_size_pretty(pg_total_relation_size('表名')) from gp_dist_random('gp_id') ;
+</code></pre>
+<h4 id="查询当前表类型">查询当前表类型</h4>
+<p>查询当前存储结构类型</p>
+<pre><code class="language-bash">select distinct relstorage from pg_class
+ relstorage
+\------------    
+ a  -- 行存储AO表    
+ h  -- heap堆表、索引    
+ x  -- 外部表(external table)    
+ v  -- 视图    
+ c  -- 列存储AO表    
+(5 rows)  
+</code></pre>
+<p>查询当前AO表：</p>
+<pre><code class="language-sql">select t2.nspname, t1.relname from pg_class t1, pg_namespace t2 where t1.relnamespace=t2.oid and relstorage in ('c', 'a');    
+</code></pre>
+<p>查询当前堆表：</p>
+<pre><code class="language-sql">select t2.nspname, t1.relname from pg_class t1, pg_namespace t2 where t1.relnamespace=t2.oid and relstorage in ('h') and relkind='r';  
+</code></pre>
+<h4 id="表类型转换">表类型转换</h4>
+<p><strong>append only table</strong></p>
+<p>适合批量写入、含少量DML。因为AO表不写WAL日志，所以为了保证可靠性，必须在一个事务结束后，fsync数据块，并记录文件末端位点，并且最后一个BLOCK即使没有写满，下次也不能再写。如果单条写入，会导致IO放大很严重。因此AO表适合的是批量写入。堆表写WAL日志，不存在这个问题。</p>
+<p>行表转AO列表，并指定对应的分布键：</p>
+<pre><code class="language-sql">CREATE TABLE app_huawei_apk_flow2 (LIKE app_huawei_apk_flow) WITH (appendonly=true, orientation=column) DISTRIBUTED BY (data_source, package_name, tag_name);
+</code></pre>
+<p><strong>行存</strong></p>
+<p>查询较多字段、输出较多记录。</p>
+<p><strong>列存</strong></p>
+<p>统计、JOIN、少量列查询。</p>
+<p><strong>heap row table</strong></p>
+<p>单步写入、含部分DML</p>
+<blockquote>
+<p><a href="https://github.com/digoal/blog/blob/master/201711/20171116_01.md">Greenplum insert的性能(单步\批量\copy) - 暨推荐使用gpfdist、阿里云oss外部表并行导入</a><br>
+<a href="https://github.com/digoal/blog/blob/master/201708/20170825_02.md">Greenplum 行存、列存，堆表、AO表性能对比 - 阿里云HDB for PostgreSQL最佳实践</a><br>
+<a href="https://github.com/digoal/blog/blob/master/201708/20170818_02.md">Greenplum 行存、列存，堆表、AO表的原理和选择</a><br>
+<a href="https://github.com/digoal/blog/blob/master/201608/20160815_01.md">Greenplum 最佳实践 - 行存与列存的选择以及转换方法</a></p>
+</blockquote>
+<h2 id="kafak-connector">Kafak Connector</h2>
+<blockquote>
+<p><a href="https://gpdb.docs.pivotal.io/6-1/greenplum-kafka/loading.html#prereq">文档</a></p>
+</blockquote>
+<p>当您使用Greenplum-Kafka集成将Kafka数据加载到Greenplum数据库表中时，将执行以下任务：<br>
+确保您满足先决条件。</p>
+<h3 id="支持的消息格式">支持的消息格式</h3>
+<table>
+<thead>
+<tr>
+<th>格式</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>avro</td>
+<td>gpkafka支持来自Kafka的libz，lzma和snappy压缩的Avro数据。</td>
+</tr>
+<tr>
+<td>binary</td>
+<td>二进制格式的数据。 gpkafka仅作为单个bytea类型的列从Kafka读取二进制数据。</td>
+</tr>
+<tr>
+<td>csv</td>
+<td>逗号分隔的文本格式数据。</td>
+</tr>
+<tr>
+<td>custom</td>
+<td>自定义格式的数据，由自定义格式器解析。</td>
+</tr>
+<tr>
+<td>delimited</td>
+<td>分隔符</td>
+</tr>
+<tr>
+<td>json</td>
+<td>gpkafka仅作为单列从Kafka读取JSON数据</td>
+</tr>
+</tbody>
+</table>
+<h3 id="构造gpkafka配置文件">构造gpkafka配置文件</h3>
+<p>您可以通过YAML格式的配置文件配置从Kafka到Greenplum数据库的数据加载操作。 此配置文件包含用于标识源Kafka数据以及有关Greenplum数据库连接和目标表的信息以及该操作的错误和提交阈值的参数。</p>
+<p><code>loadcfg2.yaml</code>：</p>
+<p><a href="https://gpdb.docs.pivotal.io/6-1/greenplum-kafka/gpkafka-yaml-v2.html">配置详情</a></p>
+<pre><code class="language-yml">DATABASE: warehouse
+USER: warehouse
+PASSWORD: warehouse
+HOST: 192.168.218.87
+PORT: 5432
+VERSION: 2
+KAFKA:
+   INPUT:
+      SOURCE:
+         BROKERS: 192.168.220.49:9092
+         TOPIC: flink-user-action
+      VALUE:
+         COLUMNS:
+           - NAME: c1
+             TYPE: json
+         FORMAT: json
+      KEY:
+         COLUMNS:
+           - NAME: key
+             TYPE: json
+         FORMAT: json
+      FILTER: (c1-&gt;&gt;'month')::int = 11 
+      ERROR_LIMIT: 25
+   OUTPUT:
+      SCHEMA: payables
+      TABLE: st_user_action
+      MAPPING:
+        - NAME: customer_id
+          EXPRESSION: (c1-&gt;&gt;'cust_id')::int
+        - NAME: newcust
+          EXPRESSION: ((c1-&gt;&gt;'cust_id')::int &gt; 5000000)::boolean
+        - NAME: expenses
+          EXPRESSION: (c1-&gt;&gt;'expenses')::decimal
+        - NAME: tax_due
+          EXPRESSION: ((c1-&gt;&gt;'expenses')::decimal * .075)::decimal
+   METADATA:
+      SCHEMA: gpkafka_internal
+   COMMIT:
+      MAX_ROW: 1000
+      MINIMAL_INTERVAL: 30000
+   POLL:
+      BATCHSIZE: 100
+      TIMEOUT: 3000
+</code></pre>
+<h3 id="运行gpkafka">运行gpkafka</h3>
+<p>您运行gpkafka load命令将Kafka数据加载到Greenplum。 运行命令时，请提供定义加载操作参数的配置文件的名称。<br>
+例如：</p>
+<pre><code class="language-text">$ gpkafka load loadcfg2.yaml
+</code></pre>
+<p>gpkafka加载的默认操作模式是读取所有未决消息，然后等待，然后使用新的Kafka消息。 在此模式下运行时，gpkafka加载会无限期等待； 您可以使用Control-c中断并退出命令。</p>
+<p>要以批处理方式运行该命令，请提供--quit-at-eof选项。 在这种模式下，当Kafka流中没有新消息时，gpkafka加载将退出。</p>
+<blockquote>
+<p><a href="https://gpdb.docs.pivotal.io/6-1/greenplum-kafka/gpkafka-load.html#topic1">命令参考</a></p>
+</blockquote>
+<h3 id="检查进度">检查进度</h3>
+<p>使用以下命令检查进度：</p>
+<pre><code class="language-text">gpkafka check loadcfg2.yaml
+</code></pre>
+<p>输出内容展示：</p>
+<pre><code class="language-text">PartitionID    StartTime    EndTime    BeginOffset    EndOffset
+0    2018-07-13T16:19:11Z    2018-07-13T16:19:11Z    0    9
+</code></pre>
+<p>当您运行不带任何选项的gpkafka check时，它将显示最新的提交。 要查看加载操作的完整提交历史记录，请运行带有<code>--show-commit-history all</code>参数的命令。</p>
+<h3 id="greenplum-注册流服务">Greenplum 注册流服务</h3>
+<p>只有注册了流服务，gpkafka才会起到作用。否则会报一些函数读取不到的错误。</p>
+<p>使用gpadmin登录master：</p>
+<pre><code>psql warehouse
+</code></pre>
+<p>执行：</p>
+<pre><code class="language-bash">CREATE EXTENSION gpss
+</code></pre>
+<p>权限注册：</p>
+<pre><code class="language-sql">GRANT USAGE, CREATE ON SCHEMA schema_name TO role_name;
+</code></pre>
+<blockquote>
+<p><a href="https://gpdb.docs.pivotal.io/6-1/greenplum-stream/instcfgmgt.html#register">参考</a></p>
+</blockquote>
+<h4 id="启动流服务器">启动流服务器</h4>
+<p>使用gpadmin登录master，创建文件<code>gpsscfg1.json</code>：</p>
+<pre><code class="language-json">{
+    &quot;ListenAddress&quot;: {
+        &quot;Host&quot;: &quot;&quot;,
+        &quot;Port&quot;: 5000
+    },
+    &quot;Gpfdist&quot;: {
+        &quot;Host&quot;: &quot;&quot;,
+        &quot;Port&quot;: 8319,
+        &quot;BindAddress&quot;: &quot;&quot;
+    }
+}
+</code></pre>
+<p>使用以上命令创建流服务：</p>
+<pre><code class="language-bash">gpss gpsscfg1.json --log-dir ./gpsslogs/ &amp;
+</code></pre>
+<blockquote>
+<p>注意事项：<br>
+GpfDist的BindAddress必须设置的空值，如果设置为127.0.0.1，将导致连接拒绝的错误</p>
+</blockquote>
+<h5 id="流客户端">流客户端</h5>
+<p>常用命令参数列表</p>
+<figure data-type="image" tabindex="1"><img src="en-resource://database/6241:0" alt="817410819d3980d4f3311b1c450525fc.png"></figure>
+<p>使用参数<code>gpss-port</code>以指定端口号。</p>
+<p>使用参数<code>gpss-host</code>以指定服务器。</p>
+<p>提交一个任务</p>
+<pre><code class="language-bash">gpsscli submit --name nightly_order_upload loadcfg.yaml
+</code></pre>
+<p>提供的任务处于停止状态，此时需要启动这个任务。</p>
+<pre><code class="language-bash">gpsscli start nightly_order_upload
+</code></pre>
+<h6 id="检查作业状态进度历史记录">检查作业状态，进度，历史记录</h6>
+<ul>
+<li>命令<code>gpsscli list</code>列出正在运行或所有业务：</li>
+</ul>
+<pre><code class="language-bash">$ gpsscli list --all
+JobID                   GPHost       GPPort  DataBase    Schema     Table                    Topic         Status  
+monday_summary          sys1          5432   testdb      public     monday_totals            totals        Stopped 
+nightly_order_upload    sys1          5432   testdb      public     night_sync               orders        Running
+</code></pre>
+<ul>
+<li>命令<code>gpsscli status</code>显示指定任务的状态</li>
+</ul>
+<pre><code class="language-bash">$ gpsscli status nightly_order_upload
+... -[INFO]:-Job monday_summary, status Running, errmsg [], time 2019-10-15T21:56:47.766397Z
+</code></pre>
+<ul>
+<li>命令<code>gpsscli process</code>显示任务的进度</li>
+</ul>
+<pre><code class="language-bash">$ gpsscli progress nightly_order_upload --partition
+PartitionID     StartTime                       EndTime                         BeginOffset     EndOffset       MsgSize
+0               2019-10-15T21:56:54.80469Z      2019-10-15T21:56:54.830441Z     242000          243000          81033    
+0               2019-10-15T21:56:54.846354Z     2019-10-15T21:56:54.880517Z     243000          244000          81021     
+0               2019-10-15T21:56:54.893097Z     2019-10-15T21:56:54.904745Z     244000  
+</code></pre>
+<ul>
+<li>命令<code>gpsscli history</code>显示所有历史记录</li>
+</ul>
+<pre><code class="language-bash">$ gpsscli history --show-commit-history all loadcfg.yaml
+PartitionID     StartTime                       EndTime                         BeginOffset     EndOffset
+0               2019-10-15T15:58:25.707977Z     2019-10-15T15:58:26.769737Z     15224           16224
+0               2019-10-15T15:58:26.813426Z     2019-10-15T15:58:26.824484Z     16224           17224
+0               2019-10-15T15:58:26.832965Z     2019-10-15T15:58:26.843036Z     17224
+</code></pre>
+<h6 id="停止与删除任务">停止与删除任务</h6>
+<pre><code class="language-bash">gpsscli stop nightly_order_upload
+gpsscli remove nightly_order_upload
+</code></pre>
+<blockquote>
+<p><a href="https://gpdb.docs.pivotal.io/6-1/greenplum-stream/loading-gpss.html">参考文档</a></p>
+</blockquote>
+<h2 id="导入">导入</h2>
+<h3 id="文件导入">文件导入</h3>
+<pre><code class="language-bat">\copy phone(phone,csv) from 'D:/xxx.csv' WITH csv;
+</code></pre>
+<h3 id="copymanager">CopyManager</h3>
+<p>使用<code>copy</code>命令，可以以非常快的速度导入文件或内存中的数据。</p>
+<pre><code class="language-java">public class CopyInTest {
+    @Autowired 
+    private DataSource dataSource;
+
+    @Test
+    public void testCopyIn() throws SQLException, IOException {
+        PgConnection connection = dataSource.getConnection().unwrap(PgConnection.class);
+        CopyManager copyManager = new CopyManager(connection);   
+        StringReader sr = new StringReader(&quot;2019-04-17 00:00:00,2019-04-17 11:00:00\n2019-04-17 00:01:00,2019-04-17 12:00:00&quot;);   
+        try {        
+            long count = copyManager.copyIn(&quot;COPY test_copy_in (create_time, update_time) FROM STDIN WITH CSV&quot;, sr);        
+            print(&quot;handle success: &quot; + count);   
+        } catch (IOException e) {
+            e.printStackTrace();   
+        }
+    }
+}
+</code></pre>
+<p>命令主要用法：</p>
+<pre><code class="language-sql">COPY [table_name] [column_name] FROM STDIN WITH CSV
+-- 或者
+COPY [table_name] [column_name] FROM STDIN WITH DELIMITER ','
+-- 如果需要针对 null 值字符串定义，则需要如下命令：
+COPY [table_name] ([column_name]) DELIMITER '`' NULL 'null' LOG ERRORS SEGMENT REJECT LIMIT 100
+</code></pre>
+<p>其中需要注意的是，对于导入的内容，如果需要处理自增长ID，则需要将该表的<strong>ID</strong>属性的默认值设为<code>nextval('hibernate_sequence')</code>。此处示例使用的是 JPA 自带的序列。可以自定义一个序列。</p>
+<p>使用<code>LOG ERRORS</code>时，插入失败的数据将自动记录到GP数据中。查询时使用命令：</p>
+<pre><code class="language-sql">SELECT * from gp_read_error_log('表名');
+</code></pre>
+<p>即可查到所有的失败例子。</p>
+<p>使用<code>SEGMENT REJECT LIMIT 100</code>时，表示如果失败100次，则本次插入将全部失败。</p>
+<pre><code class="language-sql">-- 自定义序列
+CREATE SEQUENCE myserial START 1;
+-- 设置序列
+select setval('myserial', 10000000)
+-- 查看所有序列 
+SELECT * FROM hibernate_sequence;
+</code></pre>
+<blockquote>
+<p>引用<br>
+这一篇讲的是 各种导入方式的性能影响 <a href="http://rostislav-matl.blogspot.com/2011/08/fast-inserts-to-postgresql-with-jdbc.html">Fast Inserts to PostgreSQL with JDBC and COPY FROM</a><br>
+在 JDBC 代码中使用 COPY 命令 <a href="http://pgpen.blogspot.com/2013/05/using-copy-in-your-jdbc-code.html">Postgres and Postgres Plus tips and tricks</a><br>
+Postgres COPY 命令参考： <a href="https://gpdb.docs.pivotal.io/510/ref_guide/sql_commands/COPY.html">COPY</a><br>
+<a href="https://gpdb.docs.pivotal.io/500/ref_guide/sql_commands/COPY.html#topic1__section6">关于Copy ERROR LOG 相关说明</a></p>
+</blockquote>
+<h3 id="导出">导出</h3>
+<pre><code class="language-sql">-- 导出CSV格式
+COPY table_name TO '/path/to/output.csv' WITH csv;
+</code></pre>
+<p>在windows下则需要使用：</p>
+<pre><code class="language-bat">\copy app_huawei_apk to 'F:/test/app_huawei_apk_2019_05_15_16_20.csv' WITH csv;
+</code></pre>
+<p>使用查询导出</p>
+<pre><code class="language-bat">\copy (select * from app_huawei_apk) to 'F:/test/app_huawei_apk_2019_05_15_16_20.csv' WITH HEADER DELIMITER '`';
+</code></pre>
+<blockquote>
+<p>如果出现错误提示为：<br>
+<strong>character 0xe280a2 of encoding &quot;UTF8&quot; has no equivalent in &quot;GBK&quot;</strong><br>
+则使用命令：<code>\encoding utf8</code><br>
+进行编码切换</p>
+</blockquote>
+<h2 id="分区表">分区表</h2>
+<pre><code class="language-sql">-- 创建临时数据表
+create table app_huawei_apk_temp as select * from app_huawei_apk_flow DISTRIBUTED BY (id);
+
+-- 创建分区表
+create table app_huawei_apk_flow ( like app_huawei_apk_temp )
+partition by range (create_time)
+(start (date '2019-03-01') inclusive
+END (date '2020-03-01') EXCLUSIVE 
+every (interval '1 month'), default partition other_dates);
+
+-- 向分区表插入数据
+insert into app_huawei_apk_flow select * from app_huawei_apk_temp;
+</code></pre>
+<blockquote>
+<p>引用<br>
+<a href="https://gp-docs-cn.github.io/docs/admin_guide/ddl/ddl-partition.html#topic81">对大型表分区</a></p>
+</blockquote>
+<h3 id="性能">性能</h3>
+<table>
+<thead>
+<tr>
+<th>模式</th>
+<th>吞吐</th>
+<th>tps</th>
+<th>rows/s</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>单条INSERT</td>
+<td>10 MB/s</td>
+<td>12973</td>
+<td>1.3 万</td>
+</tr>
+<tr>
+<td>批量INSERT</td>
+<td>16 MB/s</td>
+<td>207</td>
+<td>2.07 万</td>
+</tr>
+<tr>
+<td>批量COPY</td>
+<td>62 MB/s</td>
+<td>770</td>
+<td>7.7 万</td>
+</tr>
+</tbody>
+</table>
+<p>通过扩展segment个数，可以提升INSERT性能。</p>
+<p>线性 ，可到达MASTER瓶颈 (例如10GB网卡，1.25GB/s 吞吐)</p>
+<h2 id="进程">进程</h2>
+<p>查看正在处理的进程：</p>
+<pre><code class="language-sql">SELECT * FROM pg_stat_activity
+</code></pre>
+<p>关闭对应进程：</p>
+<pre><code class="language-sql">SELECT pg_cancel_backend(&lt;pid of the process&gt;)
+</code></pre>
+<p>如果关闭不成功，可以如下语句：</p>
+<pre><code class="language-sql">SELECT pg_terminate_backend(&lt;pid of the process&gt;)
+</code></pre>
+<blockquote>
+<p>参考：<br>
+<a href="https://stackoverflow.com/questions/35319597/how-to-stop-kill-a-query-in-postgresql">How to stop/kill a query in postgresql?</a></p>
+</blockquote>
+<h1 id="其它">其它</h1>
+<h2 id="引用">引用</h2>
+<p><a href="https://github.com/digoal/blog/blob/master/201710/20171027_02.md">MySQL准实时同步到PostgreSQL, Greenplum的方案之一 - rds_dbsync</a></p>
+<h2 id="常用greenplum脚本">常用Greenplum脚本</h2>
+<pre><code class="language-sql">-- 创建序列
+CREATE SEQUENCE user_action_serial START 1;
+
+-- 查询序列
+select * from user_action_serial
+
+-- 全表数据倾斜
+select gp_execution_dbid(), datname, pg_size_pretty(pg_database_size(datname)) from gp_dist_random('pg_database') order by 2,1,pg_database_size(datname) desc;
+
+-- 表级数据倾斜
+select gp_execution_dbid(), pg_size_pretty(pg_total_relation_size('st_user_action')) from gp_dist_random('gp_id');
+
+-- 查询当前表类型
+-- a -- 行存储AO表 h -- heap堆表、索引 x -- 外部表(external table) v -- 视图 c -- 列存储AO表
+select distinct relstorage from pg_class
+
+-- 查询单表占用空间
+select pg_size_pretty(pg_relation_size('st_user_action'));
+-- 查询所有表的占用空间
+SELECT table_name, pg_size_pretty(table_size) AS table_size, pg_size_pretty(indexes_size) AS indexes_size, pg_size_pretty(total_size) AS total_size FROM ( SELECT table_name, pg_table_size(table_name) AS table_size, pg_indexes_size(table_name) AS indexes_size, pg_total_relation_size(table_name) AS total_size FROM ( SELECT ('&quot;' || table_schema || '&quot;.&quot;' || table_name || '&quot;') AS table_name FROM information_schema.tables ) AS all_tables ORDER BY total_size DESC ) AS pretty_sizes
+
+-- 查看分布键
+select attname from pg_attribute 
+where attrelid='st_user_action'::regclass 
+and attnum in (SELECT unnest(distkey) FROM pg_catalog.gp_distribution_policy t where localoid='st_user_action'::regclass);
+
+-- 修改分布键
+ALTER TABLE st_user_action SET DISTRIBUTED BY (id)
+
+-- 创建表时指定分布键
+CREATE TABLE &quot;public&quot;.&quot;st_user_action2&quot; (
+  &quot;amount&quot; int8,
+	&quot;id&quot; int8,
+  &quot;business_cate&quot; varchar(100) COLLATE &quot;pg_catalog&quot;.&quot;default&quot;
+) DISTRIBUTED BY (id);
+</code></pre>
+<h1 id="license">License</h1>
+<p>© <a href="https://taliove.com">taliove.com</a> MIT</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#greenplum">Greenplum</a>
+<ul>
+<li><a href="#%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4">常用命令</a>
+<ul>
+<li><a href="#%E9%87%8D%E5%90%AFgp">重启GP</a></li>
+<li><a href="#%E4%BD%BF%E9%85%8D%E7%BD%AE%E7%94%9F%E6%95%88">使配置生效</a></li>
+<li><a href="#%E5%BF%AB%E9%80%9F%E5%85%B3%E9%97%AD">快速关闭</a></li>
+</ul>
+</li>
+<li><a href="#%E9%83%A8%E7%BD%B2">部署</a>
+<ul>
+<li><a href="#%E7%B3%BB%E7%BB%9F%E5%87%86%E5%A4%87">系统准备</a><br>
+*
+<ul>
+<li><a href="#%E4%BF%AE%E6%94%B9-hosts">修改 hosts</a></li>
+<li><a href="#%E4%BF%AE%E6%94%B9etcsysctlconf">修改<code>/etc/sysctl.conf</code></a>
+<ul>
+<li><a href="#shared-memory-pages">Shared Memory Pages</a></li>
+<li><a href="#system-memory">System Memory</a></li>
+</ul>
+</li>
+<li><a href="#%E4%BF%AE%E6%94%B9%E7%B3%BB%E7%BB%9F%E8%B5%84%E6%BA%90%E9%99%90%E5%88%B6">修改系统资源限制</a></li>
+<li><a href="#%E7%A3%81%E7%9B%98io%E4%BC%98%E5%8C%96">磁盘IO优化</a>
+<ul>
+<li><a href="#%E9%A2%84%E8%AF%BB%E5%80%BC">预读值</a></li>
+<li><a href="#%E8%AE%BE%E7%BD%AEblockdev%E9%A2%84%E8%AF%BB">设置blockdev（预读）</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#%E5%AE%89%E8%A3%85">安装</a></li>
+<li><a href="#%E9%85%8D%E7%BD%AEssh%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95">配置SSH免密登录</a></li>
+<li><a href="#%E5%88%9B%E5%BB%BA%E4%B8%BB%E6%9C%BA%E4%B8%8E%E5%A4%87%E6%9C%BA%E4%B8%8A%E5%88%9B%E5%BB%BA%E5%AD%98%E5%82%A8%E5%8C%BA">创建主机与备机上创建存储区</a>
+<ul>
+<li><a href="#%E5%9C%A8%E4%B8%BB%E6%9C%BA%E4%B8%8A%E5%88%9B%E5%BB%BA%E6%95%B0%E6%8D%AE%E7%9B%AE%E5%BD%95%E4%BD%8D%E7%BD%AE">在主机上创建数据目录位置</a></li>
+<li><a href="#%E5%9C%A8%E4%B8%BB%E6%9C%BA%E4%B8%8A%E5%88%9B%E5%BB%BA%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8%E5%8C%BA">在主机上创建数据存储区</a>
+<ul>
+<li><a href="#%E5%9C%A8%E6%89%80%E6%9C%89%E4%B8%BB%E6%9C%BA%E4%B8%8A%E5%88%9B%E5%BB%BA%E6%95%B0%E6%8D%AE%E7%9B%AE%E5%BD%95%E4%BD%8D%E7%BD%AE">在所有主机上创建数据目录位置</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#%E9%AA%8C%E8%AF%81%E7%A1%AC%E4%BB%B6%E5%92%8C%E7%BD%91%E7%BB%9C%E6%80%A7%E8%83%BD">验证硬件和网络性能</a>
+<ul>
+<li><a href="#%E9%AA%8C%E8%AF%81%E7%BD%91%E7%BB%9C%E6%80%A7%E8%83%BD">验证网络性能</a></li>
+<li><a href="#%E9%AA%8C%E8%AF%81%E7%A3%81%E7%9B%98i-o%E5%92%8C%E5%86%85%E5%AD%98%E5%B8%A6%E5%AE%BD">验证磁盘I / O和内存带宽</a></li>
+</ul>
+</li>
+<li><a href="#%E5%88%9D%E5%A7%8B%E5%8C%96greenplum%E6%95%B0%E6%8D%AE%E5%BA%93%E7%B3%BB%E7%BB%9F">初始化Greenplum数据库系统</a>
+<ul>
+<li><a href="#%E5%88%9B%E5%BB%BA%E5%88%9D%E5%A7%8B%E5%8C%96%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%96%87%E4%BB%B6">创建初始化服务器文件</a></li>
+<li><a href="#%E9%85%8D%E7%BD%AEgp%E6%95%B0%E6%8D%AE%E5%BA%93">配置GP数据库</a></li>
+<li><a href="#%E8%BF%90%E8%A1%8C%E5%88%9D%E5%A7%8B%E5%8C%96%E7%A8%8B%E5%BA%8F">运行初始化程序</a>
+<ul>
+<li><a href="#%E8%BF%90%E8%A1%8C%E5%88%9D%E5%A7%8B%E5%8C%96%E7%A8%8B%E5%BA%8F-2">运行初始化程序</a></li>
+</ul>
+</li>
+<li><a href="#%E9%85%8D%E7%BD%AE%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F">配置环境变量</a></li>
+<li><a href="#%E8%AE%BE%E7%BD%AE%E6%97%B6%E5%8C%BA">设置时区</a></li>
+</ul>
+</li>
+<li><a href="#%E9%85%8D%E7%BD%AE%E5%AE%A2%E6%88%B7%E7%AB%AF%E8%AE%BF%E9%97%AE">配置客户端访问</a></li>
+</ul>
+</li>
+<li><a href="#%E4%BD%BF%E7%94%A8">使用</a>
+<ul>
+<li><a href="#%E7%94%A8%E6%88%B7%E6%93%8D%E4%BD%9C">用户操作</a>
+<ul>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E6%89%80%E6%9C%89%E7%94%A8%E6%88%B7">查看所有用户</a></li>
+<li><a href="#%E5%88%9B%E5%BB%BA%E7%94%A8%E6%88%B7">创建用户</a></li>
+<li><a href="#%E5%88%A0%E9%99%A4%E7%94%A8%E6%88%B7">删除用户</a></li>
+<li><a href="#%E4%BF%AE%E6%94%B9%E7%94%A8%E6%88%B7%E5%AF%86%E7%A0%81">修改用户密码</a></li>
+</ul>
+</li>
+<li><a href="#%E5%88%9B%E5%BB%BA%E6%95%B0%E6%8D%AE%E5%BA%93">创建数据库</a>
+<ul>
+<li><a href="#%E5%88%9B%E5%BB%BA%E6%95%B0%E6%8D%AE%E5%BA%93%E5%B9%B6%E6%8C%87%E5%90%91%E7%94%A8%E6%88%B7">创建数据库并指向用户</a></li>
+</ul>
+</li>
+<li><a href="#%E8%BF%9E%E6%8E%A5">连接</a></li>
+<li><a href="#%E8%A1%A8">表</a>
+<ul>
+<li><a href="#%E5%88%9B%E5%BB%BA%E8%A1%A8">创建表</a>
+<ul>
+<li><a href="#%E5%9F%BA%E4%BA%8Ejson%E6%A0%BC%E5%BC%8F%E5%88%9B%E5%BB%BA%E8%A1%A8">基于JSON格式创建表</a></li>
+<li><a href="#%E5%88%9B%E5%BB%BAid%E8%87%AA%E5%A2%9E%E8%A1%A8">创建ID自增表</a>
+<ul>
+<li><a href="#%E5%88%9B%E5%BB%BA%E5%92%8C%E4%BD%BF%E7%94%A8%E5%BA%8F%E5%88%97">创建和使用序列</a></li>
+<li><a href="#%E6%A3%80%E6%9F%A5%E5%BA%8F%E5%88%97">检查序列</a></li>
+<li><a href="#%E8%BF%94%E5%9B%9E%E4%B8%8B%E4%B8%80%E4%B8%AA%E5%BA%8F%E5%88%97%E8%AE%A1%E6%95%B0">返回下一个序列计数</a></li>
+<li><a href="#%E8%AE%BE%E7%BD%AE%E8%AE%A1%E6%95%B0%E5%99%A8%E5%BA%8F%E5%88%97">设置计数器序列</a></li>
+<li><a href="#%E4%BF%AE%E6%94%B9%E5%BA%8F%E5%88%97%E5%B1%9E%E6%80%A7">修改序列属性</a></li>
+<li><a href="#%E5%88%A0%E9%99%A4%E5%BA%8F%E5%88%97">删除序列</a></li>
+<li><a href="#%E5%B0%86%E5%BA%8F%E5%88%97%E6%8C%87%E5%AE%9A%E4%B8%BA%E4%B8%80%E4%B8%AA%E5%88%97%E7%9A%84%E9%BB%98%E8%AE%A4%E5%80%BC">将序列指定为一个列的默认值</a></li>
+</ul>
+</li>
+<li><a href="#%E5%88%86%E5%B8%83%E9%94%AE">分布键</a>
+<ul>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E5%88%86%E5%B8%83%E9%94%AE">查看分布键</a></li>
+<li><a href="#%E5%88%9B%E5%BB%BA%E8%A1%A8%E6%97%B6%E6%8C%87%E5%AE%9A%E5%88%86%E5%B8%83%E9%94%AE">创建表时指定分布键</a></li>
+<li><a href="#%E4%BF%AE%E6%94%B9%E5%88%86%E5%B8%83%E9%94%AE">修改分布键</a></li>
+</ul>
+</li>
+<li><a href="#%E8%A1%A8%E5%88%86%E5%8C%BA">表分区</a></li>
+</ul>
+</li>
+<li><a href="#%E6%95%B0%E6%8D%AE%E5%80%BE%E6%96%9C">数据倾斜</a></li>
+<li><a href="#%E6%9F%A5%E8%AF%A2%E5%BD%93%E5%89%8D%E8%A1%A8%E7%B1%BB%E5%9E%8B">查询当前表类型</a></li>
+<li><a href="#%E8%A1%A8%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2">表类型转换</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#kafak-connector">Kafak Connector</a>
+<ul>
+<li><a href="#%E6%94%AF%E6%8C%81%E7%9A%84%E6%B6%88%E6%81%AF%E6%A0%BC%E5%BC%8F">支持的消息格式</a></li>
+<li><a href="#%E6%9E%84%E9%80%A0gpkafka%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6">构造gpkafka配置文件</a></li>
+<li><a href="#%E8%BF%90%E8%A1%8Cgpkafka">运行gpkafka</a></li>
+<li><a href="#%E6%A3%80%E6%9F%A5%E8%BF%9B%E5%BA%A6">检查进度</a></li>
+<li><a href="#greenplum-%E6%B3%A8%E5%86%8C%E6%B5%81%E6%9C%8D%E5%8A%A1">Greenplum 注册流服务</a>
+<ul>
+<li><a href="#%E5%90%AF%E5%8A%A8%E6%B5%81%E6%9C%8D%E5%8A%A1%E5%99%A8">启动流服务器</a>
+<ul>
+<li><a href="#%E6%B5%81%E5%AE%A2%E6%88%B7%E7%AB%AF">流客户端</a>
+<ul>
+<li><a href="#%E6%A3%80%E6%9F%A5%E4%BD%9C%E4%B8%9A%E7%8A%B6%E6%80%81%E8%BF%9B%E5%BA%A6%E5%8E%86%E5%8F%B2%E8%AE%B0%E5%BD%95">检查作业状态，进度，历史记录</a></li>
+<li><a href="#%E5%81%9C%E6%AD%A2%E4%B8%8E%E5%88%A0%E9%99%A4%E4%BB%BB%E5%8A%A1">停止与删除任务</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#%E5%AF%BC%E5%85%A5">导入</a>
+<ul>
+<li><a href="#%E6%96%87%E4%BB%B6%E5%AF%BC%E5%85%A5">文件导入</a></li>
+<li><a href="#copymanager">CopyManager</a></li>
+<li><a href="#%E5%AF%BC%E5%87%BA">导出</a></li>
+</ul>
+</li>
+<li><a href="#%E5%88%86%E5%8C%BA%E8%A1%A8">分区表</a>
+<ul>
+<li><a href="#%E6%80%A7%E8%83%BD">性能</a></li>
+</ul>
+</li>
+<li><a href="#%E8%BF%9B%E7%A8%8B">进程</a></li>
+</ul>
+</li>
+<li><a href="#%E5%85%B6%E5%AE%83">其它</a>
+<ul>
+<li><a href="#%E5%BC%95%E7%94%A8">引用</a></li>
+<li><a href="#%E5%B8%B8%E7%94%A8greenplum%E8%84%9A%E6%9C%AC">常用Greenplum脚本</a></li>
+</ul>
+</li>
+<li><a href="#license">License</a></li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+
+        
+          
+            <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+<div id="gitalk-container"></div>
+
+<script>
+
+  var gitalk = new Gitalk({
+    clientID: '53468305d729c81cde09',
+    clientSecret: 'b1c1a3ae54b80807f7a09b11b870453e9d874582',
+    repo: 'taliove.github.io',
+    owner: 'taliove',
+    admin: ['taliove'],
+    id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false  // Facebook-like distraction free mode
+  })
+
+  gitalk.render('gitalk-container')
+
+</script>
+
+          
+
+          
+        
+
+        <div class="site-footer">
+  &copy; <a href="https://taliove.com" target="_blank">添雨</a> | 
+  <a class="rss" href="https://taliove.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+
+  let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+  // This should probably be throttled.
+  // Especially because it triggers during smooth scrolling.
+  // https://lodash.com/docs/4.17.10#throttle
+  // You could do like...
+  // window.addEventListener("scroll", () => {
+  //    _.throttle(doThatStuff, 100);
+  // });
+  // Only not doing it here to keep this Pen dependency-free.
+
+  window.addEventListener("scroll", event => {
+    let fromTop = window.scrollY;
+
+    mainNavLinks.forEach((link, index) => {
+      let section = document.getElementById(decodeURI(link.hash).substring(1));
+      let nextSection = null
+      if (mainNavLinks[index + 1]) {
+        nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+      }
+      if (section.offsetTop <= fromTop) {
+        if (nextSection) {
+          if (nextSection.offsetTop > fromTop) {
+            link.classList.add("current");
+          } else {
+            link.classList.remove("current");    
+          }
+        } else {
+          link.classList.add("current");
+        }
+      } else {
+        link.classList.remove("current");
+      }
+    });
+  });
+
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>
