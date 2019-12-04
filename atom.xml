@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-    <id>https://taliove.github.io/</id>
+    <id>https://taliove.github.io</id>
     <title>添雨</title>
-    <updated>2019-12-04T03:02:59.693Z</updated>
+    <updated>2019-12-04T03:04:02.611Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
-    <link rel="alternate" href="https://taliove.github.io/"/>
-    <link rel="self" href="https://taliove.github.io//atom.xml"/>
+    <link rel="alternate" href="https://taliove.github.io"/>
+    <link rel="self" href="https://taliove.github.io/atom.xml"/>
     <subtitle>记录生活、记录历史</subtitle>
-    <logo>https://taliove.github.io//images/avatar.png</logo>
-    <icon>https://taliove.github.io//favicon.ico</icon>
+    <logo>https://taliove.github.io/images/avatar.png</logo>
+    <icon>https://taliove.github.io/favicon.ico</icon>
     <rights>All rights reserved 2019, 添雨</rights>
     <entry>
         <title type="html"><![CDATA[Hello Gridea]]></title>
-        <id>https://taliove.github.io//post/hello-gridea</id>
-        <link href="https://taliove.github.io//post/hello-gridea">
+        <id>https://taliove.github.io/post/hello-gridea</id>
+        <link href="https://taliove.github.io/post/hello-gridea">
         </link>
         <updated>2018-12-11T16:00:00.000Z</updated>
         <summary type="html"><![CDATA[<p>👏  欢迎使用 <strong>Gridea</strong> ！<br>
