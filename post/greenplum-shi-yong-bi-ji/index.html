@@ -1,105 +1,108 @@
+<!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="utf-8" >
+
 <title>Greenplum 使用笔记 | 添雨</title>
-<meta name="description" content="记录生活、记录历史" />
-<link rel="shortcut icon" href="https://taliove.github.io/favicon.ico?v=1575429803237">
+<meta name="description" content="记录生活、记录历史">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://taliove.github.io/favicon.ico?v=1575430682429">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://taliove.github.io/styles/main.css">
 
+
+  
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css" />
+  
+
+  
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
 
 
 
   </head>
   <body>
-    <div class="main">
-      <div class="main-content">
-        <div class="site-header">
-  <a href="https://taliove.github.io">
-  <img class="avatar" src="https://taliove.github.io/images/avatar.png?v=1575429803237" alt="">
-  </a>
-  <h1 class="site-title">
-    添雨
-  </h1>
-  <p class="site-description">
-    记录生活、记录历史
-  </p>
-  <div class="menu-container">
-    
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://taliove.github.io">
+        <img src="https://taliove.github.io/images/avatar.png?v=1575430682429" class="site-logo">
+        <h1 class="site-title">添雨</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
       
-        <a href="/" class="menu">
-          首页
-        </a>
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
       
-    
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
       
-        <a href="/archives" class="menu">
-          归档
-        </a>
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
       
-    
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
       
-        <a href="/tags" class="menu">
-          标签
-        </a>
-      
-    
-      
-        <a href="/post/about" class="menu">
-          关于
-        </a>
-      
-    
+    </div>
   </div>
-  <div class="social-container">
-    
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
       
-        <a href="http://github.com/taliove" target="_blank">
-          <i class="fab fa-github"></i>
-        </a>
+        
       
-    
+        
       
-    
+        
       
-    
+        
       
-    
+        
       
-    
+    </div>
+    <div class="site-description">
+      记录生活、记录历史
+    </div>
+    <div class="site-footer">
+      &copy; <a href="https://taliove.com" target="_blank">添雨</a> | <a class="rss" href="https://taliove.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
   </div>
 </div>
 
-        <div class="post-detail">
-          <article class="post">
-            <h2 class="post-title">
-              Greenplum 使用笔记
-            </h2>
-            <div class="post-info">
-              <span>
-                2019-12-04
-              </span>
-              <span>
-                32 min read
-              </span>
-              
-                <a href="https://taliove.github.io/tag/OS0ixoDOc" class="post-tag">
-                  # 大数据
-                </a>
-              
-                <a href="https://taliove.github.io/tag/2Zc3EDyQ6u" class="post-tag">
-                  # Greenplum
-                </a>
-              
-            </div>
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Greenplum 使用笔记</h2>
+            <div class="post-date">2019-12-04</div>
             
-            <div class="post-content-wrapper">
-              <div class="post-content">
-                <h1 id="greenplum">Greenplum</h1>
+            <div class="post-content">
+              <h1 id="greenplum">Greenplum</h1>
 <blockquote>
 <p>链接：<br>
 [<a href="https://gpdb.docs.pivotal.io/6-1/main/index.html">Pivotal Greenplum® 6.1 Documentation</a> · <a href="https://network.pivotal.io/products/pivotal-gpdb#/releases/338232">Pivotal Greenplum Download</a>]</p>
@@ -1103,250 +1106,78 @@ CREATE TABLE &quot;public&quot;.&quot;st_user_action2&quot; (
 <h1 id="license">License</h1>
 <p>© <a href="https://taliove.com">taliove.com</a> MIT</p>
 
-              </div>
-              <div class="toc-container">
-                <ul class="markdownIt-TOC">
-<li><a href="#greenplum">Greenplum</a>
-<ul>
-<li><a href="#%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4">常用命令</a>
-<ul>
-<li><a href="#%E9%87%8D%E5%90%AFgp">重启GP</a></li>
-<li><a href="#%E4%BD%BF%E9%85%8D%E7%BD%AE%E7%94%9F%E6%95%88">使配置生效</a></li>
-<li><a href="#%E5%BF%AB%E9%80%9F%E5%85%B3%E9%97%AD">快速关闭</a></li>
-</ul>
-</li>
-<li><a href="#%E9%83%A8%E7%BD%B2">部署</a>
-<ul>
-<li><a href="#%E7%B3%BB%E7%BB%9F%E5%87%86%E5%A4%87">系统准备</a><br>
-*
-<ul>
-<li><a href="#%E4%BF%AE%E6%94%B9-hosts">修改 hosts</a></li>
-<li><a href="#%E4%BF%AE%E6%94%B9etcsysctlconf">修改<code>/etc/sysctl.conf</code></a>
-<ul>
-<li><a href="#shared-memory-pages">Shared Memory Pages</a></li>
-<li><a href="#system-memory">System Memory</a></li>
-</ul>
-</li>
-<li><a href="#%E4%BF%AE%E6%94%B9%E7%B3%BB%E7%BB%9F%E8%B5%84%E6%BA%90%E9%99%90%E5%88%B6">修改系统资源限制</a></li>
-<li><a href="#%E7%A3%81%E7%9B%98io%E4%BC%98%E5%8C%96">磁盘IO优化</a>
-<ul>
-<li><a href="#%E9%A2%84%E8%AF%BB%E5%80%BC">预读值</a></li>
-<li><a href="#%E8%AE%BE%E7%BD%AEblockdev%E9%A2%84%E8%AF%BB">设置blockdev（预读）</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><a href="#%E5%AE%89%E8%A3%85">安装</a></li>
-<li><a href="#%E9%85%8D%E7%BD%AEssh%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95">配置SSH免密登录</a></li>
-<li><a href="#%E5%88%9B%E5%BB%BA%E4%B8%BB%E6%9C%BA%E4%B8%8E%E5%A4%87%E6%9C%BA%E4%B8%8A%E5%88%9B%E5%BB%BA%E5%AD%98%E5%82%A8%E5%8C%BA">创建主机与备机上创建存储区</a>
-<ul>
-<li><a href="#%E5%9C%A8%E4%B8%BB%E6%9C%BA%E4%B8%8A%E5%88%9B%E5%BB%BA%E6%95%B0%E6%8D%AE%E7%9B%AE%E5%BD%95%E4%BD%8D%E7%BD%AE">在主机上创建数据目录位置</a></li>
-<li><a href="#%E5%9C%A8%E4%B8%BB%E6%9C%BA%E4%B8%8A%E5%88%9B%E5%BB%BA%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8%E5%8C%BA">在主机上创建数据存储区</a>
-<ul>
-<li><a href="#%E5%9C%A8%E6%89%80%E6%9C%89%E4%B8%BB%E6%9C%BA%E4%B8%8A%E5%88%9B%E5%BB%BA%E6%95%B0%E6%8D%AE%E7%9B%AE%E5%BD%95%E4%BD%8D%E7%BD%AE">在所有主机上创建数据目录位置</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><a href="#%E9%AA%8C%E8%AF%81%E7%A1%AC%E4%BB%B6%E5%92%8C%E7%BD%91%E7%BB%9C%E6%80%A7%E8%83%BD">验证硬件和网络性能</a>
-<ul>
-<li><a href="#%E9%AA%8C%E8%AF%81%E7%BD%91%E7%BB%9C%E6%80%A7%E8%83%BD">验证网络性能</a></li>
-<li><a href="#%E9%AA%8C%E8%AF%81%E7%A3%81%E7%9B%98i-o%E5%92%8C%E5%86%85%E5%AD%98%E5%B8%A6%E5%AE%BD">验证磁盘I / O和内存带宽</a></li>
-</ul>
-</li>
-<li><a href="#%E5%88%9D%E5%A7%8B%E5%8C%96greenplum%E6%95%B0%E6%8D%AE%E5%BA%93%E7%B3%BB%E7%BB%9F">初始化Greenplum数据库系统</a>
-<ul>
-<li><a href="#%E5%88%9B%E5%BB%BA%E5%88%9D%E5%A7%8B%E5%8C%96%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%96%87%E4%BB%B6">创建初始化服务器文件</a></li>
-<li><a href="#%E9%85%8D%E7%BD%AEgp%E6%95%B0%E6%8D%AE%E5%BA%93">配置GP数据库</a></li>
-<li><a href="#%E8%BF%90%E8%A1%8C%E5%88%9D%E5%A7%8B%E5%8C%96%E7%A8%8B%E5%BA%8F">运行初始化程序</a>
-<ul>
-<li><a href="#%E8%BF%90%E8%A1%8C%E5%88%9D%E5%A7%8B%E5%8C%96%E7%A8%8B%E5%BA%8F-2">运行初始化程序</a></li>
-</ul>
-</li>
-<li><a href="#%E9%85%8D%E7%BD%AE%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F">配置环境变量</a></li>
-<li><a href="#%E8%AE%BE%E7%BD%AE%E6%97%B6%E5%8C%BA">设置时区</a></li>
-</ul>
-</li>
-<li><a href="#%E9%85%8D%E7%BD%AE%E5%AE%A2%E6%88%B7%E7%AB%AF%E8%AE%BF%E9%97%AE">配置客户端访问</a></li>
-</ul>
-</li>
-<li><a href="#%E4%BD%BF%E7%94%A8">使用</a>
-<ul>
-<li><a href="#%E7%94%A8%E6%88%B7%E6%93%8D%E4%BD%9C">用户操作</a>
-<ul>
-<li><a href="#%E6%9F%A5%E7%9C%8B%E6%89%80%E6%9C%89%E7%94%A8%E6%88%B7">查看所有用户</a></li>
-<li><a href="#%E5%88%9B%E5%BB%BA%E7%94%A8%E6%88%B7">创建用户</a></li>
-<li><a href="#%E5%88%A0%E9%99%A4%E7%94%A8%E6%88%B7">删除用户</a></li>
-<li><a href="#%E4%BF%AE%E6%94%B9%E7%94%A8%E6%88%B7%E5%AF%86%E7%A0%81">修改用户密码</a></li>
-</ul>
-</li>
-<li><a href="#%E5%88%9B%E5%BB%BA%E6%95%B0%E6%8D%AE%E5%BA%93">创建数据库</a>
-<ul>
-<li><a href="#%E5%88%9B%E5%BB%BA%E6%95%B0%E6%8D%AE%E5%BA%93%E5%B9%B6%E6%8C%87%E5%90%91%E7%94%A8%E6%88%B7">创建数据库并指向用户</a></li>
-</ul>
-</li>
-<li><a href="#%E8%BF%9E%E6%8E%A5">连接</a></li>
-<li><a href="#%E8%A1%A8">表</a>
-<ul>
-<li><a href="#%E5%88%9B%E5%BB%BA%E8%A1%A8">创建表</a>
-<ul>
-<li><a href="#%E5%9F%BA%E4%BA%8Ejson%E6%A0%BC%E5%BC%8F%E5%88%9B%E5%BB%BA%E8%A1%A8">基于JSON格式创建表</a></li>
-<li><a href="#%E5%88%9B%E5%BB%BAid%E8%87%AA%E5%A2%9E%E8%A1%A8">创建ID自增表</a>
-<ul>
-<li><a href="#%E5%88%9B%E5%BB%BA%E5%92%8C%E4%BD%BF%E7%94%A8%E5%BA%8F%E5%88%97">创建和使用序列</a></li>
-<li><a href="#%E6%A3%80%E6%9F%A5%E5%BA%8F%E5%88%97">检查序列</a></li>
-<li><a href="#%E8%BF%94%E5%9B%9E%E4%B8%8B%E4%B8%80%E4%B8%AA%E5%BA%8F%E5%88%97%E8%AE%A1%E6%95%B0">返回下一个序列计数</a></li>
-<li><a href="#%E8%AE%BE%E7%BD%AE%E8%AE%A1%E6%95%B0%E5%99%A8%E5%BA%8F%E5%88%97">设置计数器序列</a></li>
-<li><a href="#%E4%BF%AE%E6%94%B9%E5%BA%8F%E5%88%97%E5%B1%9E%E6%80%A7">修改序列属性</a></li>
-<li><a href="#%E5%88%A0%E9%99%A4%E5%BA%8F%E5%88%97">删除序列</a></li>
-<li><a href="#%E5%B0%86%E5%BA%8F%E5%88%97%E6%8C%87%E5%AE%9A%E4%B8%BA%E4%B8%80%E4%B8%AA%E5%88%97%E7%9A%84%E9%BB%98%E8%AE%A4%E5%80%BC">将序列指定为一个列的默认值</a></li>
-</ul>
-</li>
-<li><a href="#%E5%88%86%E5%B8%83%E9%94%AE">分布键</a>
-<ul>
-<li><a href="#%E6%9F%A5%E7%9C%8B%E5%88%86%E5%B8%83%E9%94%AE">查看分布键</a></li>
-<li><a href="#%E5%88%9B%E5%BB%BA%E8%A1%A8%E6%97%B6%E6%8C%87%E5%AE%9A%E5%88%86%E5%B8%83%E9%94%AE">创建表时指定分布键</a></li>
-<li><a href="#%E4%BF%AE%E6%94%B9%E5%88%86%E5%B8%83%E9%94%AE">修改分布键</a></li>
-</ul>
-</li>
-<li><a href="#%E8%A1%A8%E5%88%86%E5%8C%BA">表分区</a></li>
-</ul>
-</li>
-<li><a href="#%E6%95%B0%E6%8D%AE%E5%80%BE%E6%96%9C">数据倾斜</a></li>
-<li><a href="#%E6%9F%A5%E8%AF%A2%E5%BD%93%E5%89%8D%E8%A1%A8%E7%B1%BB%E5%9E%8B">查询当前表类型</a></li>
-<li><a href="#%E8%A1%A8%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2">表类型转换</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><a href="#kafak-connector">Kafak Connector</a>
-<ul>
-<li><a href="#%E6%94%AF%E6%8C%81%E7%9A%84%E6%B6%88%E6%81%AF%E6%A0%BC%E5%BC%8F">支持的消息格式</a></li>
-<li><a href="#%E6%9E%84%E9%80%A0gpkafka%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6">构造gpkafka配置文件</a></li>
-<li><a href="#%E8%BF%90%E8%A1%8Cgpkafka">运行gpkafka</a></li>
-<li><a href="#%E6%A3%80%E6%9F%A5%E8%BF%9B%E5%BA%A6">检查进度</a></li>
-<li><a href="#greenplum-%E6%B3%A8%E5%86%8C%E6%B5%81%E6%9C%8D%E5%8A%A1">Greenplum 注册流服务</a>
-<ul>
-<li><a href="#%E5%90%AF%E5%8A%A8%E6%B5%81%E6%9C%8D%E5%8A%A1%E5%99%A8">启动流服务器</a>
-<ul>
-<li><a href="#%E6%B5%81%E5%AE%A2%E6%88%B7%E7%AB%AF">流客户端</a>
-<ul>
-<li><a href="#%E6%A3%80%E6%9F%A5%E4%BD%9C%E4%B8%9A%E7%8A%B6%E6%80%81%E8%BF%9B%E5%BA%A6%E5%8E%86%E5%8F%B2%E8%AE%B0%E5%BD%95">检查作业状态，进度，历史记录</a></li>
-<li><a href="#%E5%81%9C%E6%AD%A2%E4%B8%8E%E5%88%A0%E9%99%A4%E4%BB%BB%E5%8A%A1">停止与删除任务</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><a href="#%E5%AF%BC%E5%85%A5">导入</a>
-<ul>
-<li><a href="#%E6%96%87%E4%BB%B6%E5%AF%BC%E5%85%A5">文件导入</a></li>
-<li><a href="#copymanager">CopyManager</a></li>
-<li><a href="#%E5%AF%BC%E5%87%BA">导出</a></li>
-</ul>
-</li>
-<li><a href="#%E5%88%86%E5%8C%BA%E8%A1%A8">分区表</a>
-<ul>
-<li><a href="#%E6%80%A7%E8%83%BD">性能</a></li>
-</ul>
-</li>
-<li><a href="#%E8%BF%9B%E7%A8%8B">进程</a></li>
-</ul>
-</li>
-<li><a href="#%E5%85%B6%E5%AE%83">其它</a>
-<ul>
-<li><a href="#%E5%BC%95%E7%94%A8">引用</a></li>
-<li><a href="#%E5%B8%B8%E7%94%A8greenplum%E8%84%9A%E6%9C%AC">常用Greenplum脚本</a></li>
-</ul>
-</li>
-<li><a href="#license">License</a></li>
-</ul>
-
-              </div>
             </div>
-          </article>
+            
+              <div class="tag-container">
+                
+                  <a href="https://taliove.github.io/tag/OS0ixoDOc" class="tag">
+                    大数据
+                  </a>
+                
+                  <a href="https://taliove.github.io/tag/2Zc3EDyQ6u" class="tag">
+                    Greenplum
+                  </a>
+                
+              </div>
+            
+            
+
+            
+              
+                <div id="gitalk-container" data-aos="fade-in"></div>
+              
+
+              
+            
+
+          </div>
+
         </div>
-
-        
-
-        
-          
-            <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
-<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-
-<div id="gitalk-container"></div>
-
-<script>
-
-  var gitalk = new Gitalk({
-    clientID: '53468305d729c81cde09',
-    clientSecret: 'b1c1a3ae54b80807f7a09b11b870453e9d874582',
-    repo: 'taliove.github.io',
-    owner: 'taliove',
-    admin: ['taliove'],
-    id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
-    distractionFreeMode: false  // Facebook-like distraction free mode
-  })
-
-  gitalk.render('gitalk-container')
-
-</script>
-
-          
-
-          
-        
-
-        <div class="site-footer">
-  &copy; <a href="https://taliove.com" target="_blank">添雨</a> | 
-  <a class="rss" href="https://taliove.github.io/atom.xml" target="_blank">RSS</a>
-</div>
-
-<script>
-  hljs.initHighlightingOnLoad()
-
-  let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
-
-  // This should probably be throttled.
-  // Especially because it triggers during smooth scrolling.
-  // https://lodash.com/docs/4.17.10#throttle
-  // You could do like...
-  // window.addEventListener("scroll", () => {
-  //    _.throttle(doThatStuff, 100);
-  // });
-  // Only not doing it here to keep this Pen dependency-free.
-
-  window.addEventListener("scroll", event => {
-    let fromTop = window.scrollY;
-
-    mainNavLinks.forEach((link, index) => {
-      let section = document.getElementById(decodeURI(link.hash).substring(1));
-      let nextSection = null
-      if (mainNavLinks[index + 1]) {
-        nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
-      }
-      if (section.offsetTop <= fromTop) {
-        if (nextSection) {
-          if (nextSection.offsetTop > fromTop) {
-            link.classList.add("current");
-          } else {
-            link.classList.remove("current");    
-          }
-        } else {
-          link.classList.add("current");
-        }
-      } else {
-        link.classList.remove("current");
-      }
-    });
-  });
-
-</script>
-
       </div>
     </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+
+<script type="application/javascript">
+
+AOS.init();
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+  
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+
+      var gitalk = new Gitalk({
+        clientID: '53468305d729c81cde09',
+        clientSecret: 'b1c1a3ae54b80807f7a09b11b870453e9d874582',
+        repo: 'taliove.github.io',
+        owner: 'taliove',
+        admin: ['taliove'],
+        id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+        distractionFreeMode: false  // Facebook-like distraction free mode
+      })
+
+      gitalk.render('gitalk-container')
+
+    </script>
+  
+
+  
+
+
+
+
   </body>
 </html>

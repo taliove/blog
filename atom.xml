@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://taliove.github.io</id>
     <title>添雨</title>
-    <updated>2019-12-04T03:23:29.805Z</updated>
+    <updated>2019-12-04T03:38:05.048Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://taliove.github.io"/>
     <link rel="self" href="https://taliove.github.io/atom.xml"/>
@@ -10,25 +10,4 @@
     <logo>https://taliove.github.io/images/avatar.png</logo>
     <icon>https://taliove.github.io/favicon.ico</icon>
     <rights>All rights reserved 2019, 添雨</rights>
-    <entry>
-        <title type="html"><![CDATA[Greenplum 使用笔记]]></title>
-        <id>https://taliove.github.io/post/greenplum-shi-yong-bi-ji</id>
-        <link href="https://taliove.github.io/post/greenplum-shi-yong-bi-ji">
-        </link>
-        <updated>2019-12-04T03:18:01.000Z</updated>
-        <summary type="html"><![CDATA[<h1 id="greenplum">Greenplum</h1>
-<blockquote>
-<p>链接：<br>
-[<a href="https://gpdb.docs.pivotal.io/6-1/main/index.html">Pivotal Greenplum® 6.1 Documentation</a> · <a href="https://network.pivotal.io/products/pivotal-gpdb#/releases/338232">Pivotal Greenplum Download</a>]</p>
-</blockquote>
-<p>Pivotal Greenplum数据库是一个大规模并行处理（MPP）数据库服务器，它支持下一代数据仓库和大规模分析处理。 通过自动分区数据并运行并行查询，它使服务器集群可以作为单个数据库超级计算机运行，其运行速度比传统数据库快数十倍或数百倍。 它支持SQL，MapReduce并行处理以及数据量，范围从数百GB到数百TB。</p>
-]]></summary>
-        <content type="html"><![CDATA[<h1 id="greenplum">Greenplum</h1>
-<blockquote>
-<p>链接：<br>
-[<a href="https://gpdb.docs.pivotal.io/6-1/main/index.html">Pivotal Greenplum® 6.1 Documentation</a> · <a href="https://network.pivotal.io/products/pivotal-gpdb#/releases/338232">Pivotal Greenplum Download</a>]</p>
-</blockquote>
-<p>Pivotal Greenplum数据库是一个大规模并行处理（MPP）数据库服务器，它支持下一代数据仓库和大规模分析处理。 通过自动分区数据并运行并行查询，它使服务器集群可以作为单个数据库超级计算机运行，其运行速度比传统数据库快数十倍或数百倍。 它支持SQL，MapReduce并行处理以及数据量，范围从数百GB到数百TB。</p>
-]]></content>
-    </entry>
 </feed>
